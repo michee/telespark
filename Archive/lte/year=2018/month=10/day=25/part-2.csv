@@ -1,0 +1,4 @@
+year;month;day;cell_identity;frequency_band;site_id
+2018;10;25;G;900;1
+2018;10;25;H;2100;1
+2018;10;25;N;2100;4
