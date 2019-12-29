@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+<Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+        <PatternLayout pattern="%date %5level %logger{15}: %message%n"/>
+    </Console>
+</Appenders>
+<Loggers>
+    <Root level="INFO">
+        <AppenderRef ref="Console"/>
+    </Root>
+    <logger name="com.datastax.driver.core.QueryLogger.SLOW" level="DEBUG" />
+    <logger name="com.datastax.driver.core.QueryLogger.ERROR" level="DEBUG"/>
+    <logger name="com.datastax.driver.core.QueryLogger.NORMAL" level="INFO"/>
+</Loggers>
+</Configuration>
