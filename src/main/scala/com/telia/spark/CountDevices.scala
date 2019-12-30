@@ -3,9 +3,8 @@ package com.telia.spark
 import java.nio.file.Paths
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession, functions}
 import org.apache.spark.sql.types.{DataType, DoubleType, IntegerType, StringType, StructField, StructType}
-import org.apache.spark.sql.functions
 import org.apache.hadoop.fs.Path
 
 
@@ -76,11 +75,8 @@ object CountDevices extends SparkJob {
       .load(dir)
   }
 
-  // ROOT
-  //def getCellData(ss: SparkSession, technology: String): DataFrame =
 
-
-  def merge(a: DataFrame, b: DataFrame): DataFrame = a.union(b)
+  def mergeDF(a: DataFrame, b: DataFrame): DataFrame = a.union(b)
 
   def main(args: Array[String]) = {
 
@@ -102,32 +98,43 @@ object CountDevices extends SparkJob {
 
     val archive = new ArchiveClient(spark, "./Archive")
 
+    /*/ TEST Write
+    val df = readPartiotioned(spark, "./Archive/lte")
+    df.printSchema()
+    df.show()
+    archive.write("result", df)
+     */
+
+
     val technologies: List[String] = List("gsm", "umts", "lte")
+
     val daysToDo = archive.getMissingDays(technologies, "result")
-    println(daysToDo)
 
     daysToDo.foreach { day =>
 
       println("DAY: " + day)
 
-      val techFiles: List[(String, List[Path])] = technologies.map(tech => (tech, archive.getSingleCSVFile(tech, day)))
+      val allTechFilesOnADay: List[(String, List[Path])] = technologies.map(tech => (tech, archive.getSingleCSVFile(tech, day)))
 
       val cellList: List[DataFrame] =
-        techFiles
+        allTechFilesOnADay
           .filter(_._2.nonEmpty)  // Filter out Technologies that dont have files on the day
           .map{ case (tech, file) =>
+
             val df = read(spark, file.head.toString, cellSchema)
             df.withColumn("technology", functions.lit(tech))
           }
 
-      val cells: DataFrame = cellList.reduce(merge)
+      val cells: DataFrame = cellList.reduce(mergeDF)
 
       val siteFile = archive.getSingleCSVFile("site", day)
       val sites: DataFrame = read(spark, siteFile.head.toString, siteSchema)
 
       // val deviceCount = new CountLogic(spark).countTech(cells, sites)
+      // TODO: save device count
 
       val bandCount = new CountLogic(spark).bandsPerSite(cells, sites)
+      // TODO: save bandCount
 
     }
 

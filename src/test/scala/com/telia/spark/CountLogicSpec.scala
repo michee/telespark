@@ -229,7 +229,7 @@ class CountLogicSpec
       val cell   = List.empty[CellRow].toDF
       val site   = List.empty[SiteRow].toDF
       val result = new CountLogic(ss).bandsPerSite(cell, site).coalesce(1)
-      val expect = List.empty[CountRow].toDF
+      val expect = ss.createDataFrame(emptyRDD, bandResSchema)
       assertSmallDataFrameEquality(result, expect, ignoreNullable = true)
     }
 
@@ -250,7 +250,7 @@ class CountLogicSpec
 
       val expected = bandDTzero()
           .withColumn("site_id"            , lit(siteA))
-          .withColumn("frequency_band_G900", lit(1))
+          .withColumn("frequency_band_G900", typedLit(1l))
 
       assertSmallDataFrameEquality(result, expected, ignoreNullable = true)
     }
@@ -272,8 +272,8 @@ class CountLogicSpec
 
       val expect = bandDTzero()
           .withColumn("site_id", lit(siteA))
-          .withColumn("frequency_band_L700", lit(2))
-          .withColumn("frequency_band_U900", lit(1))
+          .withColumn("frequency_band_L700", typedLit(2l))
+          .withColumn("frequency_band_U900", typedLit(1l))
 
       assertSmallDataFrameEquality(result, expect, ignoreNullable = true)
     }
@@ -298,9 +298,9 @@ class CountLogicSpec
 
       val expect = bandDTzero()
           .withColumn("site_id", lit(siteA))
-          .withColumn("frequency_band_L700",  lit(2))
-          .withColumn("frequency_band_L2100", lit(2))
-          .withColumn("frequency_band_L2600", lit(1))
+          .withColumn("frequency_band_L700",  typedLit(2l))
+          .withColumn("frequency_band_L2100", typedLit(2l))
+          .withColumn("frequency_band_L2600", typedLit(1l))
 
       assertSmallDataFrameEquality(result, expect, ignoreNullable = true)
     }
@@ -321,7 +321,7 @@ class CountLogicSpec
 
       val expect = bandDTzero()
         .withColumn("site_id", lit(siteA))
-        .withColumn("frequency_band_L700", lit(1))
+        .withColumn("frequency_band_L700", typedLit(1l))
 
       assertSmallDataFrameEquality(result, expect, ignoreNullable = true)
     }
@@ -342,7 +342,7 @@ class CountLogicSpec
 
       val expect = bandDTzero()
         .withColumn("site_id", lit(siteA))
-        .withColumn("frequency_band_L700",  lit(1))
+        .withColumn("frequency_band_L700",  typedLit(1l))
 
       assertSmallDataFrameEquality(result, expect, ignoreNullable = true)
     }

@@ -1,6 +1,6 @@
 package com.telia.spark
 
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 import org.apache.hadoop.fs.{FileSystem, LocatedFileStatus, Path, RemoteIterator}
 
 import scala.annotation.tailrec
@@ -12,9 +12,9 @@ import scala.collection.immutable.Stream.Empty
 
 class ArchiveClient(ss: SparkSession, root: String) {
 
-  val fs = org.apache.hadoop.fs.FileSystem.get(ss.sparkContext.hadoopConfiguration)
+  private val fs = org.apache.hadoop.fs.FileSystem.get(ss.sparkContext.hadoopConfiguration)
+  private val rootPath: Path = new Path(root)
 
-  val rootPath: Path = new Path(root)
 
   @tailrec
   private def listFiles(it: RemoteIterator[LocatedFileStatus], files: List[LocatedFileStatus]): List[LocatedFileStatus] =
@@ -25,25 +25,8 @@ class ArchiveClient(ss: SparkSession, root: String) {
     }
 
 
-  def listCVSFiles(dir: String): List[LocatedFileStatus] = { //List[Day] =
-
-   /* println("root")
-    fs.listStatus(rootPath).map(_.getPath).foreach(println)
-
-    println("home dir")
-    println( fs.getWorkingDirectory.toString )
-
-    println("rootPath")
-    println(rootPath.toString)
-
-  */
-
-  //  println( rootPath + "/" + dir)
-
+  def listCVSFiles(dir: String): List[LocatedFileStatus] = {
     val dirPath = new Path(rootPath + "/" + dir)
-
-   // println("dirPath")
-   // println(dirPath)
 
     if (!fs.exists(dirPath))
       return List.empty
@@ -57,12 +40,6 @@ class ArchiveClient(ss: SparkSession, root: String) {
 
   def getAllDaysFromDir(dir: String): Set[Day] = {
     val cvsFiles = listCVSFiles(dir)
-    //val exp = "/year=([0-9]+)/month=([0-9]+)/day=([0-9]+)/^.*\\.(cvs)".r
-    //val pattern = "/year=([0-9]+)/".r
-
-    // println("cvsFiles")
-    // cvsFiles.foreach(println)
-
 
     // Extract year, month, day from filePath .../year=2019/month=10/day=10/somfile.cvs
     cvsFiles.map { cvsFile =>
@@ -94,6 +71,29 @@ class ArchiveClient(ss: SparkSession, root: String) {
     val dayPath = dirName + toUrl(day)
     val files = listCVSFiles(dayPath)
     files.map(_.getPath)
+  }
+
+  def write(targetDir: String, df: DataFrame) = {
+    println(rootPath)
+
+    println("fs: " + fs.getUri)
+
+    val targetPath = new Path(rootPath + "/" + targetDir)
+
+    println(targetPath)
+    println("Uri: " + targetPath.toUri)
+    println("Str: " + targetPath.toString)
+    println("name: " + targetPath.getParent)
+
+    df
+      .write
+      .partitionBy("year", "month", "day")
+      .mode(SaveMode.ErrorIfExists)
+      .format("csv")
+      .option("header", "true")
+      .option("delimiter", ";")
+
+      .save(targetPath.toString)
   }
 
 }
