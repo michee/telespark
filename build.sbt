@@ -11,6 +11,8 @@ lazy val sparkJob =
       scalaVersion := "2.12.10",
       description := "SparkJob - count devices",
       mainClass in (Compile, run) := Some("com.telia.spark.CountDevices"),
+      fork in Test := false,
+      parallelExecution in Test := false,
       resolvers += Resolver.bintrayRepo("spark-packages", "maven"),   // for spark-fast-test lib
       libraryDependencies ++= Seq(
 

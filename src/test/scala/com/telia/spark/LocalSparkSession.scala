@@ -1,5 +1,6 @@
 package com.telia.spark
 
+import org.apache.spark.SparkContext
 import org.apache.spark.sql.SparkSession
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
 
@@ -11,7 +12,7 @@ trait LocalSparkSession extends BeforeAndAfterEach with BeforeAndAfterAll { self
 
   def sparkSession:SparkSession
 
-  override def beforeEach() = {
+  override def beforeEach(): Unit = {
     ss = sparkSession
     super.beforeEach()
   }
@@ -30,7 +31,6 @@ trait LocalSparkSession extends BeforeAndAfterEach with BeforeAndAfterAll { self
     LocalSparkSession.stop(ss)
     ss = null
   }
-
 }
 
 object LocalSparkSession {
@@ -38,8 +38,6 @@ object LocalSparkSession {
     if (ss != null) {
       ss.stop()
     }
-    // To avoid Akka rebinding to the same port, since it doesn't unbind immediately on shutdown
-    System.clearProperty("spark.driver.port")
   }
 
   /** Runs `f` by passing in `ss` and ensures that `ss` is stopped. */

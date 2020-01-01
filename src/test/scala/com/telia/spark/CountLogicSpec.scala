@@ -32,7 +32,7 @@ class CountLogicSpec
   with OneInstancePerTest
   with DataFrameComparer {
 
-  val conf = new SparkConf(false).setMaster("local[4]")
+  val conf = LocalSparkConf()
 
   //overriding the sparkSession method from LocalSparkSession trait
   override def sparkSession =
@@ -108,10 +108,6 @@ class CountLogicSpec
   }
 
   "CellsPerTech" should {
-
-    "Handle unknown technology" in {
-      pending
-    }
 
     "Disregard data entries with the wrong day" in {
       pending
@@ -345,6 +341,13 @@ class CountLogicSpec
         .withColumn("frequency_band_L700",  typedLit(1l))
 
       assertSmallDataFrameEquality(result, expect, ignoreNullable = true)
+    }
+  }
+
+  "Apply date" should {
+
+    "apply date columns to a DF" in {
+      pending
     }
   }
 }

@@ -1,20 +1,45 @@
 package com.telia.spark
 
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
-import org.apache.hadoop.fs.{FileSystem, LocatedFileStatus, Path, RemoteIterator}
+import org.apache.hadoop.fs.{LocatedFileStatus, Path, RemoteIterator}
 
 import scala.annotation.tailrec
-import scala.collection.immutable.Stream.Empty
 
-// Client to access archived data
-// Could be HDFS, S3 or some other source,
-// in this case. local File system
+
+
+class ArchiveUtil(in: ArchiveClient, out: ArchiveClient) {
+
+  def getMissingDays(input: List[String], result: String): Set[Day] = {
+    val inputDays: List[Set[Day]] = input.map(in.getAllDaysFromDir)
+    val allDays: Set[Day] = inputDays.reduce(_ ++ _)
+
+    val resultDays = out.getAllDaysFromDir(result)
+
+    val missingResult = allDays -- resultDays
+
+    missingResult
+  }
+
+}
+
+
+/**
+ * Client to access archived data
+ * Could be HDFS, S3 or some other source,
+ * in this case. local File system
+ **/
 
 class ArchiveClient(ss: SparkSession, root: String) {
 
   private val fs = org.apache.hadoop.fs.FileSystem.get(ss.sparkContext.hadoopConfiguration)
   private val rootPath: Path = new Path(root)
 
+  // Enable writing only some partitions (days), in partition /year/month/day
+  ss.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
+
+  def close() = {
+    fs.close()
+  }
 
   @tailrec
   private def listFiles(it: RemoteIterator[LocatedFileStatus], files: List[LocatedFileStatus]): List[LocatedFileStatus] =
@@ -25,7 +50,8 @@ class ArchiveClient(ss: SparkSession, root: String) {
     }
 
 
-  def listCVSFiles(dir: String): List[LocatedFileStatus] = {
+  def listCVSFiles(dir: String, underRoot: Boolean = true): List[LocatedFileStatus] = {
+
     val dirPath = new Path(rootPath + "/" + dir)
 
     if (!fs.exists(dirPath))
@@ -55,16 +81,6 @@ class ArchiveClient(ss: SparkSession, root: String) {
     }.toSet
   }
 
-  def getMissingDays(input: List[String], result: String): Set[Day] = {
-    val inputDays: List[Set[Day]] = input.map(getAllDaysFromDir)
-    val allDays: Set[Day] = inputDays.reduce(_ ++ _)
-
-    val resultDays = getAllDaysFromDir(result)
-
-    val missingResult = allDays -- resultDays
-    missingResult
-  }
-
   def toUrl(d: Day): String = s"/year=${d.year}/month=${d.month}/day=${d.day}/"
 
   def getSingleCSVFile(dirName: String, day: Day): List[Path] = {
@@ -73,26 +89,18 @@ class ArchiveClient(ss: SparkSession, root: String) {
     files.map(_.getPath)
   }
 
-  def write(targetDir: String, df: DataFrame) = {
-    println(rootPath)
+  def write(dir: String, df: DataFrame) = {
 
-    println("fs: " + fs.getUri)
-
-    val targetPath = new Path(rootPath + "/" + targetDir)
-
-    println(targetPath)
-    println("Uri: " + targetPath.toUri)
-    println("Str: " + targetPath.toString)
-    println("name: " + targetPath.getParent)
+    val targetPath = new Path(rootPath + "/" + dir)
 
     df
       .write
       .partitionBy("year", "month", "day")
-      .mode(SaveMode.ErrorIfExists)
+      // .mode(SaveMode.ErrorIfExists)
+      .mode(SaveMode.Overwrite)
       .format("csv")
       .option("header", "true")
       .option("delimiter", ";")
-
       .save(targetPath.toString)
   }
 

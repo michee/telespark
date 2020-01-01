@@ -1,8 +1,8 @@
 package com.telia.spark
 
+
 import org.apache.spark.sql.{Column, DataFrame, Dataset, SparkSession}
 import org.apache.spark.sql.functions._
-
 
 
 case class CellRow(
@@ -29,7 +29,7 @@ class CountLogic(spark: SparkSession) {
   /**
    * Technology and Frequencies
    */
-  val bands: Map[String, List[Int]] = Map(
+  private val bands: Map[String, List[Int]] = Map(
     "gsm"  -> List(900, 1800),
     "umts" -> List(900, 2100),
     "lte"  -> List(700, 800, 1800, 2100, 2600)
@@ -54,9 +54,10 @@ class CountLogic(spark: SparkSession) {
   }
 
 
-  /** UDF, not used in favor of DataFrame API's
+  /**
+   * UDF, not used in favor of DataFrame API's
     */
-  def bandString(tech: String, band: Int) = {
+  private def bandString(tech: String, band: Int) = {
     val t = tech match {
       case "gsm"  => "G"
       case "umts" => "U"
@@ -66,13 +67,13 @@ class CountLogic(spark: SparkSession) {
     s"frequency_band_$t$band"
   }
 
-  def listTechBands(bandMap: Map[String, List[Int]]): Seq[String] = {
+  private def listTechBands(bandMap: Map[String, List[Int]]): Seq[String] = {
     bandMap.flatMap{
       case (k, bands) => bands.map(bandString(k, _))
     }.toSeq
   }
 
-  val allTechnologyBandCombos: Seq[String] = listTechBands(bands)
+  private val allTechnologyBandCombos: Seq[String] = listTechBands(bands)
 
   /**
    * Note:
@@ -92,6 +93,7 @@ class CountLogic(spark: SparkSession) {
       cells
         .withColumn("technology", renameTech('technology))
         .withColumn("technology", concat('technology, lit(""), 'frequency_band))
+        //  .select($"*", concat('technology, lit(""), 'frequency_band).as("t"))
 
     val a = sites.join(renamedCells, usingColumns = Seq("site_id"), joinType = "left")
     val b = a.groupBy("site_id", "technology").count()
