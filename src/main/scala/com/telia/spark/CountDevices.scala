@@ -38,6 +38,7 @@ object CountDevices extends SparkJob {
   }
 
   // Read Partitioned
+  // FIXME: Remove unused
   def readPartiotioned(ss: SparkSession, dir: String): DataFrame = {
     ss.read
       .option("header", "true")
@@ -66,19 +67,6 @@ object CountDevices extends SparkJob {
 
     val countLogic = new CountLogic(spark)
 
-
-    /*/ TEST SPARK READ Partition Discovery
-    val df = readPartiotioned(spark, "./Archive/lte")
-    df.printSchema()
-    df.show()
-    */
-
-    /*/ TEST Write
-    val df = readPartiotioned(spark, "./Archive/lte")
-    df.printSchema()
-    df.show()
-    archive.write("result", df)
-     */
 
     val technologies: List[String] = List("gsm", "umts", "lte")
 
@@ -109,7 +97,8 @@ object CountDevices extends SparkJob {
       val siteFile = archiveIn.getSingleCSVFile("site", day)
       val sites: DataFrame = read(spark, siteFile.head.toString, InputSchema.siteSchema)
 
-      // TODO: Check that the date is correct,
+
+      // TODO: Sanity Check that the date is correct,
 
 
       if (techResultMissingDays.contains(day)) {
@@ -117,10 +106,10 @@ object CountDevices extends SparkJob {
         val deviceCount = countLogic.countTech(cells, sites)
         val df = countLogic.applyDate(deviceCount, day).coalesce(1)
         archiveOut.write(techResultDir, df)
-
       }
 
       if (freqResultMissingDays.contains(day)) {
+
         val bandCount = countLogic.bandsPerSite(cells, sites)
         val df = countLogic.applyDate(bandCount, day).coalesce(1)
         archiveOut.write(freqResultDir, df)

@@ -1,12 +1,9 @@
 
 package com.telia.spark
 
-import com.telia.spark.CountDevices.conf
-import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 import org.scalatest.{Matchers, OneInstancePerTest, WordSpec}
 
-import scala.io.Source
 
 class ArchiveClientSpec extends WordSpec with Matchers with LocalSparkSession with OneInstancePerTest {
 
