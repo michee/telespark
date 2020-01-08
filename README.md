@@ -3,18 +3,15 @@ Spark Job to count daily occurences of
 * cells per site.
 * frequency bands per site. 
 
-
 ## HowTo configure and run
 
-The job is run by 
+The job is run by:
 ```
 sbt run
 ```
 see **run_locally.sh** for an example.
 
-The job is configured with via environment variables.
-
-current variables: 
+The job is configured with via environment variables:
 
 - **SPARK_HOME** 
 - **SPARK_MASTER** - _url to spark master eg: "local[*]" or "spark://localhost:7077"_ 
@@ -31,10 +28,11 @@ current variables:
         * How would you schedule your code to run every day? 
         * How would you handle configuration? 
         * How do you make sure refactoring in the future will not break your logic? 
-        * Did you see something strange in the data?
+        * Did you see something strange in the data?"
+   
    
 My general approach to infrastructure is that  
-You should treat application builds as events in a immutable data pipeline,
+You should treat code and application builds as events in a immutable data pipeline,
 every new build should be stored in a archive.\
 At any point in time one should be able to deploy any version of the application from the archive to production.
 
@@ -45,12 +43,11 @@ Ill paint out a rough description of a backend stack and navigate the applicatio
 
 The lifecycle of the application begins with identifying a need from stackeholders or internally. 
 The team would have a design session where the specs for the application are stated and broken down into Tasks. 
-
-
+Then the team would implement the application using TDD.
 
 The Backend is composed of many services and cron jobs (data-pipeline) which are most likely 
 orchestrated by a resource handler, eg Apache Aurora/Mesos or Kubernetes. 
-Its a good idea to have a configuration file listing all Currently active cron jobs (and services) and how much resources or instances they need.
+Its a good idea to have a configuration file (repo) listing all Currently active cron jobs (and services) and how much resources or instances they need.
 per environment. 
 Assuming there are at least two environments testing/integration and production. 
  
@@ -66,7 +63,7 @@ Where **passing all unit-test are a prerequisit for an application to be deploye
 
 The application build is saved into an archive and tagged with a git commit id (build-nr) 
 
-deploying. 
+### deploying
 Deployment might be done with a custom command line tool, which simplifies the deployment for developers. 
 It might take 3 parameters. The service/ETL-job name, build-nr, and environment. 
 In the background the deployment tool takes the specified application, build from the archive and registers it to run in service resource handler Aurora/Mesos/Kubernetes
@@ -102,7 +99,8 @@ The general goal is to separate parameters that changes frequently from tha appl
 But its still important to save the configuration in a version control system (git). 
 I would have one repo for all services/application configurations. 
 
-
+Secrets could be served by Kubernetes injecting them into the Docker container, or by a 
+secrethandling service eg Vault. 
 
 ### refactoring
 Every application containing some logic should have Unit-tests. 
@@ -115,12 +113,16 @@ after refactoring in a parent job.\
 I would create a schema For the input (site and cell) data, that is shared between the this job and the parent.\
 Shared between producer and consumer, a contract.
 
+Another approach is to state that the schema in a directory (or kafka topic) does not change. 
+
  
 ### error handling - monitoring
 Even though I have turned off logging in this Task, I am a big fan of logging!
 Extensive logging should be used in the application, and sent to a logg aggregator/monitoring tool eg. datadog.
 To enable the possibility of performance tuning, and backtracking bugs.
-The application (and all other jobs and services) should be 
+The applications status (all services and applications) should be monitored by a monitoring services that can trigger alerts 
+if a application fails or crashes. 
+
 
 ### the data 
 The data is in CSV format, 
@@ -131,17 +133,10 @@ For every data-type created in the data pipeline there should be an accompanied 
 Globally shared so its available for consumers of the data to use. 
 
 I prefer a strict approach on handling the data with defined schemas and taking advantage of scalas typesystem, 
-But in some cases a no-schema approach is better (eg in cases of collecting metadata)
-
-   
-### Left over thoughts
-   Notes:
-   * I would use TYPED datasets for the assignment instead, 
-   * Schemas for site and cell data should be shared between this job and the job that writes the files. 
-   * Shared Schema beteen this and parent job eg. avro-scheema. contract between producer and consumer. 
-\
-\
-\
+But in some cases a no-schema approach is better, eg in cases of collecting metadata, 
+in those cases safety can be compensated with unit-tests. 
+  
+  
 ## Task Journey
 
 I would use TYPED DataSets or TYPED RDD's for the assignment instead of loosely typed DataFrames. 
@@ -193,7 +188,8 @@ The two "calculations" of counting technology and counting bands are very simila
 2. sum up the different techologies in the "technology" column (per site)
 
 A first instinct would be to create ONE general function for summing up the technology. 
-And letting the two 
+And letting the site, frequency- calculations transform the technology column and then call the general 
+function to sum up.  
 
 But the two "calculations" are quite small and not so complicated, therefore it was a borderline 
 case whether to create general functions both calculations would use.
