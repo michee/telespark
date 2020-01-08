@@ -92,7 +92,9 @@ When the input set grows, the result set grows.
 If the input is unchanged, the result set is unchanged. 
 The result set would be saved in a idempotent way
 (eg into a DB, saving an already existing result row would just update the same row with the same data)
-By 
+Then one could let the function run with a high frequency, almost a function running in "realtime"
+To sum up the train of though: One could schedule the application to run frequently. 
+But if one is after removing latency in the data pipeline, spark streaming might be a better approach.
 
 ### configuration
 The different types of configuration parameters into the application. 
