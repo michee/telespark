@@ -18,8 +18,14 @@ The job is configured with via environment variables:
 - **INPUT_PATH***  - _path to Archive folder root, local or remote. eg: "./Archive" or "hdfs://someArchive"_
 - **OUTPUT_PATH*** - _path to result folder root, local or remote. eg: "./result" or "hdfs://someplace/result"_ 
 
-\* _variable should have more unique name if NOT run in a isolated environment._
 
+
+Unit tests are run with
+```
+sbt test
+```
+
+\* _variable should have more unique name if NOT run in a isolated environment._
 
 ## Lifecycle Thoughts   
     Include some thoughts about the lifecycle of the application. 
